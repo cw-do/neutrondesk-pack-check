@@ -65,7 +65,7 @@ Two kinds of pack exist and use the same layout:
   agent/
     system-prompt.md        what tunes the assistant; without it the instrument gets the shared behaviour only
     modules/*.md            optional; one topic per file; only .md is read
-    scan-functions.txt      optional; Python source split at each top-level `def`; read only by pack code
+    scan-functions.txt      optional; Python source split at each top-level `def`; the app adds two lookup tools over it
   guides/*.md               optional; front matter required
   pv/
     catalogue.json          optional; PVDefinition[]
@@ -169,16 +169,17 @@ position and its last body, as a Python dict built from the file would; the
 check warns about such duplicates because they are usually a mistake in the
 source file. Kept as `.txt` so nothing tries to run or lint it.
 
-The app itself does not answer from this file. It hands the split list to the
-pack's code as `api.knowledge.scanFunctions`, and it is the pack's own tools
-that look a function up by name or keyword and quote it (EQSANS:
-`src/scanFunctions.ts` and the `list_scan_functions` / `lookup_scan_function`
-tools in `src/tools.ts`; copy those if your instrument is scripted the same
-way). A pack without `src/` gets nothing from this file, so an instrument
-without scriptable functions, or one whose commands are not Python (SPICE,
-say), should leave it out and describe its commands in a module instead, where
-retrieval finds them. A command reference in another format can go under
-`data/` and be parsed by pack code.
+When the file is present the app itself adds two tools for the instrument,
+`list_scan_functions` and `lookup_scan_function`, which look a function up by
+exact name or by keyword and quote its real source; no pack code is needed,
+and the descriptions name the instrument. Those two names are reserved: a
+pack may not define tools with them (the check refuses), but it may build its
+own reader under other names, and its code also receives the split list as
+`api.knowledge.scanFunctions`. An instrument without scriptable functions, or
+one whose commands are not Python (SPICE, say), leaves the file out and
+describes its commands in a module instead, where retrieval finds them; a
+command reference in another format can go under `data/` and be parsed by
+pack code.
 
 ## `guides/*.md`
 
@@ -274,8 +275,9 @@ Constraints, enforced by `pack-check`:
   substring scan, so it applies to comments too ("the process." in a comment
   fails). The code is compiled without the DOM library, so `fetch` and
   `console` do not even type-check.
-- Tool names are `snake_case`, unique, and not one of the app's shared tools
-  (`list_ipts_catalog`, `get_latest_run`, `list_experiments`).
+- Tool names are `snake_case`, unique, and not one of the app's own tools
+  (`list_ipts_catalog`, `get_latest_run`, `list_experiments`,
+  `list_scan_functions`, `lookup_scan_function`).
 - Where a wrong answer costs beam time, the model supplies arguments and code
   renders the result. Do not let the model write a script; let it call a tool
   that writes it.

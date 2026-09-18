@@ -37,7 +37,8 @@ const MODULE_WARN_BYTES = 40 * 1024;
 const ALLOWED_EXTENSIONS = new Set(['.md', '.txt', '.json', '.sav', '.ts', '.csv', '.yaml', '.yml', '.py']);
 const ALLOWED_NAMES = new Set(['README.md', 'LICENSE', '.gitattributes', '.gitignore', 'package.json', 'package-lock.json', 'AGENTS.md', 'CLAUDE.md']);
 const SKIP_DIRS = new Set(['.git', 'node_modules', '.github']);
-const SHARED_TOOL_NAMES = ['list_ipts_catalog', 'get_latest_run', 'list_experiments'];
+/** Tool names the app owns: the catalogue tools, and the scan-function tools it builds over a pack's scan-functions.txt. */
+const SHARED_TOOL_NAMES = ['list_ipts_catalog', 'get_latest_run', 'list_experiments', 'list_scan_functions', 'lookup_scan_function'];
 const FORBIDDEN_TOKENS = ['fetch(', 'XMLHttpRequest', 'require(', 'import(', 'process.', 'eval(', 'globalThis', 'setTimeout(', 'setInterval('];
 const NUMBER_TOLERANCE = 1e-12;
 
@@ -80,6 +81,7 @@ function resolveResources(appArg) {
       sharedGuides: readJson(path.join(__dirname, 'shared-guides.json')),
       packApiDir: path.join(__dirname, 'pack-api'),
       retrievalCore: () => require(path.join(__dirname, 'retrievalCore.js')),
+      scanFunctionTools: () => require(path.join(__dirname, 'scanFunctionTools.js')),
     };
   }
   const app = appArg ?? path.join(__dirname, '..', '..');
@@ -94,17 +96,26 @@ function resolveResources(appArg) {
     mode: `app checkout at ${app}`,
     sharedGuides,
     packApiDir: path.join(app, 'tools', 'pack-api'),
-    retrievalCore: () => {
-      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'nd-pack-check-core-'));
-      try {
-        tsc(['--ignoreConfig', '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck', '--outDir', tmp, path.join(app, 'src', 'agent', 'retrievalCore.ts')], app);
-        // Loaded before the temp dir goes; require caches the module.
-        return require(path.join(tmp, 'retrievalCore.js'));
-      } finally {
-        fs.rmSync(tmp, { recursive: true, force: true });
-      }
-    },
+    retrievalCore: () => compileAppModule(app, 'retrievalCore'),
+    scanFunctionTools: () => compileAppModule(app, 'scanFunctionTools'),
   };
+}
+
+/**
+ * Compile one of the app's pure agent modules (and what it imports) from
+ * source and load it. Loaded before the temp dir goes; require caches it.
+ */
+function compileAppModule(app, name) {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'nd-pack-check-mod-'));
+  try {
+    tsc(
+      ['--ignoreConfig', '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck', '--rootDir', path.join(app, 'src', 'agent'), '--outDir', tmp, path.join(app, 'src', 'agent', `${name}.ts`)],
+      app
+    );
+    return require(path.join(tmp, `${name}.js`));
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -424,12 +435,25 @@ async function run(opts) {
     }
   }
 
+  // The tools the app will actually offer for this pack: the app-built
+  // scan-function tools (when the pack has scan functions) plus the pack's own.
+  // Cases may call either. The catalogue tools need ONCat and are not here.
+  let appTools = [];
+  if (pack.scanFunctions.length > 0) {
+    try {
+      appTools = res.scanFunctionTools().buildScanFunctionTools(pack.scanFunctions, m.shortName, helpers);
+      ok(`F23: the app adds ${appTools.map((t) => t.schema.function.name).join(', ')} over scan-functions.txt`);
+    } catch (e) {
+      fail('F23: could not build the app scan-function tools', (e.stdout?.toString() || e.message).trim().slice(0, 400));
+    }
+  }
+
   const toolRunResults = [];
   if (cases?.toolRuns?.length) {
-    if (!tools) {
+    if (!tools && appTools.length === 0) {
       fail('F23: toolRuns cases present but no tools were built');
     } else {
-      const byName = new Map(tools.map((t) => [t.schema.function.name, t]));
+      const byName = new Map([...appTools, ...(tools ?? [])].map((t) => [t.schema.function.name, t]));
       const ctx = {
         adapter: { id: m.id, facility: m.facility, name: m.name, shortName: m.shortName, fullName: m.fullName, beamline: m.beamline },
         facility: m.facility,
