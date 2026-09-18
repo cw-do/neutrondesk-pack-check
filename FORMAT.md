@@ -65,7 +65,7 @@ Two kinds of pack exist and use the same layout:
   agent/
     system-prompt.md        what tunes the assistant; without it the instrument gets the shared behaviour only
     modules/*.md            optional; one topic per file; only .md is read
-    scan-functions.txt      optional; split at each top-level `def`
+    scan-functions.txt      optional; Python source split at each top-level `def`; read only by pack code
   guides/*.md               optional; front matter required
   pv/
     catalogue.json          optional; PVDefinition[]
@@ -168,6 +168,17 @@ that function's real signature and body. A name defined twice keeps its first
 position and its last body, as a Python dict built from the file would; the
 check warns about such duplicates because they are usually a mistake in the
 source file. Kept as `.txt` so nothing tries to run or lint it.
+
+The app itself does not answer from this file. It hands the split list to the
+pack's code as `api.knowledge.scanFunctions`, and it is the pack's own tools
+that look a function up by name or keyword and quote it (EQSANS:
+`src/scanFunctions.ts` and the `list_scan_functions` / `lookup_scan_function`
+tools in `src/tools.ts`; copy those if your instrument is scripted the same
+way). A pack without `src/` gets nothing from this file, so an instrument
+without scriptable functions, or one whose commands are not Python (SPICE,
+say), should leave it out and describe its commands in a module instead, where
+retrieval finds them. A command reference in another format can go under
+`data/` and be parsed by pack code.
 
 ## `guides/*.md`
 
