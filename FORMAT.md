@@ -26,11 +26,16 @@ Two kinds of pack exist and use the same layout:
    app's instrument picker shows it (`EQSANS`, `CG2`, `PG3`), upper case. The
    app links the pack to the instrument by this id and nothing else; a typo
    here means a pack that never attaches. The check warns if the id is not one
-   it knows. Then the names, the beamline, the one-line blurb, and the
-   capabilities the instrument really has.
+   it knows. Then the names, the beamline, the one-line blurb, the
+   capabilities the instrument really has, and `agent.retrievalTerms`: the
+   lower-case words that mark a question as being about your instrument (its
+   id, the name of its reduction tool).
 3. **Write `agent/system-prompt.md`.** Only what is true at your beamline: the
    task domains, the measurement sequence, the defaults, which tools to
-   prefer over memory. The app already supplies the shared rules.
+   prefer over memory. The app already supplies the shared rules. Every
+   instrument has the Ask assistant; this file is what tunes it, and without
+   it the assistant answers from the catalogue and the shared guides and
+   says so.
 4. **Add modules under `agent/modules/`.** One topic per file. Each is scored
    whole against every question, so a file that covers two topics competes with
    itself.
@@ -136,12 +141,16 @@ Rules:
 
 ## `agent/`
 
-**`system-prompt.md`** holds the instrument's own rules only. The app already
-provides, for every instrument: how to answer on a phone, that the assistant
-never executes anything, the refusal to rule on a Research Safety Summary, how
-to use the catalogue tools, and what wins when rules conflict. Do not repeat
-those. `{{INSTRUMENT_NAME}}` is substituted with `shortName`. Do not write
-`<!-- instrument -->`; that marker belongs to the app's template.
+**`system-prompt.md`** holds the instrument's own rules only. It is optional
+in the sense that a pack without it still has an assistant, one that answers
+from the catalogue and the shared guides and says plainly what it cannot
+answer; the check warns when it is missing. The app already provides, for
+every instrument: how to answer on a phone, that the assistant never executes
+anything, what to do about a safety incident, the refusal to rule on a
+Research Safety Summary, how to use the catalogue tools, and what wins when
+rules conflict. Do not repeat those. `{{INSTRUMENT_NAME}}` is substituted with
+`shortName`. Do not write `<!-- instrument -->`; that marker belongs to the
+app's template.
 
 Use EQSANS's as the shape: what the task domains are, the measurement sequence,
 the defaults, which tools to prefer over answering from memory.
