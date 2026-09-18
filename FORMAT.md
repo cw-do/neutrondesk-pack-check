@@ -162,9 +162,16 @@ the defaults, which tools to prefer over answering from memory.
 **`modules/*.md`** are reference documents scored against each question by
 keyword. Whole files are scored, so one topic per file: a module that grows into
 two topics dilutes its own score and should be split. A Setext title (`Title`
-underlined with `===`) becomes the module title; otherwise the file name is
-used. Files sort by the first number in their name, so `module2` comes before
-`module10`. Anything that is not `.md` is ignored.
+underlined with `===`) or an ATX title on the first line (`# Title`) becomes
+the module title; otherwise the file name is used. Files sort by the first
+number in their name, so `module2` comes before `module10`. Anything that is
+not `.md` is ignored.
+
+Retrieval matches words in any script, but it matches them against the
+modules as written: a Korean question over an English corpus finds nothing
+unless a module contains the Korean word. A per-pack synonym map is planned
+(see the app's phase-2 plan); until then, write modules in the language your
+users ask in, or in both.
 
 **`scan-functions.txt`** is a copy of the instrument's scan-function source. It is
 split at every top-level `def name(` so a question about one function returns
@@ -308,7 +315,13 @@ Constraints, enforced by `pack-check`:
 }
 ```
 
-`golden/` holds expected outputs written by `pack-check --write-golden`:
+A retrieval case's `expect` names modules by file name and shared guides as
+`guide:<id>`; the check scores the pack's modules and every guide in
+`guides.order`. With a small corpus, "one of the top five" excludes little,
+so prefer `mustMention` with a phrase only the right document contains.
+
+`golden/` holds expected outputs written by `pack-check --write-golden` (a
+pack without code has none, and the tool says so):
 `tools.json` (schemas and activity lines), `toolruns.json` (each case's result),
 `selfcheck.json` (whatever `selfCheck` returns). Goldens are reviewed by a person
 and committed; never regenerate them in CI.

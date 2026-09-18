@@ -495,10 +495,14 @@ async function run(opts) {
   if (pack.selfCheck !== undefined) goldens['selfcheck.json'] = pack.selfCheck;
 
   if (opts.writeGolden) {
-    fs.mkdirSync(goldenDir, { recursive: true });
-    for (const [name, value] of Object.entries(goldens)) {
-      fs.writeFileSync(path.join(goldenDir, name), stable(value), 'utf8');
-      ok(`F24-26: wrote checks/golden/${name}`);
+    if (Object.keys(goldens).length === 0) {
+      ok('F24-26: nothing to record; a pack without code has no goldens');
+    } else {
+      fs.mkdirSync(goldenDir, { recursive: true });
+      for (const [name, value] of Object.entries(goldens)) {
+        fs.writeFileSync(path.join(goldenDir, name), stable(value), 'utf8');
+        ok(`F24-26: wrote checks/golden/${name}`);
+      }
     }
   } else {
     for (const [name, value] of Object.entries(goldens)) {

@@ -87,11 +87,15 @@ function loadModules(dir) {
     })
     .map((file) => {
       const text = read(path.join(dir, file)).trim();
-      // Setext headers ("Title\n====="), not ATX — this corpus's only '#'
-      // characters are Python comments inside fenced code blocks.
+      // The title is a Setext header ("Title\n=====") or an ATX one ("# Title")
+      // on the first line; failing both, the file name. Setext is checked
+      // first because a Python-heavy corpus has '#' comments inside fenced
+      // blocks, and only the first line is considered for ATX for the same
+      // reason.
       const lines = text.split('\n');
       const setext = lines.findIndex((l, i) => i > 0 && /^[=-]{3,}\s*$/.test(l));
-      const title = setext > 0 ? lines[setext - 1].trim() : file.replace(/\.md$/, '');
+      const atx = /^#\s+(.+?)\s*#*\s*$/.exec(lines[0] ?? '');
+      const title = setext > 0 ? lines[setext - 1].trim() : atx ? atx[1] : file.replace(/\.md$/, '');
       return { id: file.replace(/\.md$/, ''), title, text };
     });
 }

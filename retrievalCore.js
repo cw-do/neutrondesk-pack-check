@@ -48,9 +48,17 @@ const SHARED_TERMS = [
     'reduce',
     'stitch',
 ];
+/**
+ * Words, in any script. `\w` is ASCII-only, which made a Korean question score
+ * as no words at all; Unicode letters and digits count now. For English text
+ * the tokens are identical to before. Korean is not split at particles, so a
+ * word with a particle attached matches a document only through the
+ * substring fallback in `score`, which is a weaker signal but not none.
+ */
+const WORD = /[\p{L}\p{N}_]+/gu;
 function wordCounts(text) {
     const counts = new Map();
-    for (const w of text.match(/\b\w+\b/g) ?? []) {
+    for (const w of text.match(WORD) ?? []) {
         counts.set(w, (counts.get(w) ?? 0) + 1);
     }
     return counts;
@@ -118,7 +126,7 @@ function score(doc, words, queryLower, c) {
  * context with the least-irrelevant document.
  */
 function retrieveFrom(c, query, k = 5) {
-    const words = [...new Set(query.toLowerCase().match(/\b\w+\b/g) ?? [])];
+    const words = [...new Set(query.toLowerCase().match(WORD) ?? [])];
     if (words.length === 0)
         return [];
     const queryLower = query.toLowerCase();
