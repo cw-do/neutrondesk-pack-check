@@ -442,7 +442,8 @@ async function run(opts) {
   }
 
   const goldens = {};
-  if (tools) goldens['tools.json'] = tools.map((t) => ({ schema: t.schema, activityEmpty: t.activity({}) }));
+  // A content pack has no tools, and an empty golden for them says nothing.
+  if (tools && pack.hasSrc) goldens['tools.json'] = tools.map((t) => ({ schema: t.schema, activityEmpty: t.activity({}) }));
   if (toolRunResults.length) goldens['toolruns.json'] = toolRunResults;
   if (pack.selfCheck !== undefined) goldens['selfcheck.json'] = pack.selfCheck;
 
