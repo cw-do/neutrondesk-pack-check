@@ -8,7 +8,13 @@
  * packs themselves, at which point this file goes away.
  */
 
-exports.CAPABILITIES = ['runs', 'monitor', 'detector', 'pv', 'guides', 'agent', 'reduction'];
+exports.CAPABILITIES = ['runs', 'monitor', 'detector', 'pv', 'guides', 'reduction'];
+
+/**
+ * Accepted and dropped with a warning. "agent" meant "has the Ask assistant",
+ * but every instrument has it; a pack tunes it by shipping agent/system-prompt.md.
+ */
+exports.DEPRECATED_CAPABILITIES = ['agent'];
 
 exports.GUIDE_CATEGORIES = [
   'experiment',

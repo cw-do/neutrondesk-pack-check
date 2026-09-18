@@ -161,7 +161,7 @@ function validateManifest(m, label) {
 
   if (!isStringArray(m.capabilities) || !unique(m.capabilities)) bad('capabilities must be an array of unique strings');
   for (const c of m.capabilities) {
-    if (!vocab.CAPABILITIES.includes(c)) bad(`unknown capability "${c}"`);
+    if (!vocab.CAPABILITIES.includes(c) && !vocab.DEPRECATED_CAPABILITIES.includes(c)) bad(`unknown capability "${c}"`);
   }
   if (typeof m.usesSansTitleConvention !== 'boolean') bad('usesSansTitleConvention must be a boolean');
 
@@ -189,6 +189,15 @@ function validateManifest(m, label) {
   if (!unique(linkIds)) bad('link ids must be unique');
 
   if (!m.agent || typeof m.agent !== 'object') bad('agent must be an object');
+  for (const key of Object.keys(m.agent)) {
+    if (!['suggestions', 'retrievalTerms'].includes(key)) bad(`agent: unknown key "${key}"`);
+  }
+  if ('retrievalTerms' in m.agent) {
+    if (!isStringArray(m.agent.retrievalTerms) || !unique(m.agent.retrievalTerms)) bad('agent.retrievalTerms must be an array of unique strings');
+    for (const t of m.agent.retrievalTerms) {
+      if (t !== t.toLowerCase() || !/^[a-z0-9][a-z0-9_-]*$/.test(t)) bad(`agent.retrievalTerms: "${t}" must be a lower-case word`);
+    }
+  }
   if (!isStringArray(m.agent.suggestions)) bad('agent.suggestions must be an array of strings');
   if (m.agent.suggestions.length < 1 || m.agent.suggestions.length > MAX_SUGGESTIONS) {
     bad(`agent.suggestions must have 1 to ${MAX_SUGGESTIONS} entries`);
@@ -272,14 +281,14 @@ function loadPack(dir, opts = {}) {
 
   const promptFile = path.join(dir, 'agent', 'system-prompt.md');
   const instructions = exists(promptFile) ? read(promptFile).trim() : null;
-  if (manifest.capabilities.includes('agent') && instructions === null) {
-    throw new Error(`${label}: capabilities include "agent" but agent/system-prompt.md is missing`);
-  }
   if (instructions !== null && instructions.includes(INSTRUMENT_MARKER)) {
     throw new Error(`${label}/agent/system-prompt.md: must not contain ${INSTRUMENT_MARKER}; that marker belongs to the app template`);
   }
 
   const scan = loadScanFunctions(path.join(dir, 'agent', 'scan-functions.txt'));
+  // A deprecated capability is dropped here so nothing downstream sees it;
+  // pack-check reports it from the raw manifest.
+  manifest.capabilities = manifest.capabilities.filter((c) => !vocab.DEPRECATED_CAPABILITIES.includes(c));
   return {
     folder: label,
     manifest,

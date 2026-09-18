@@ -58,7 +58,7 @@ Two kinds of pack exist and use the same layout:
   LICENSE                   recommended
   .gitattributes            recommended: * text=auto eol=lf
   agent/
-    system-prompt.md        required if capabilities includes "agent"
+    system-prompt.md        what tunes the assistant; without it the instrument gets the shared behaviour only
     modules/*.md            optional; one topic per file; only .md is read
     scan-functions.txt      optional; split at each top-level `def`
   guides/*.md               optional; front matter required
@@ -95,7 +95,7 @@ Rules:
   "fullName": "Extended Q-Range Small-Angle Neutron Scattering Diffractometer",
   "beamline": "BL-6",
   "blurb": "Small-angle scattering, time-of-flight. Full NeutronDesk support.",
-  "capabilities": ["runs", "monitor", "detector", "pv", "guides", "agent", "reduction"],
+  "capabilities": ["runs", "monitor", "detector", "pv", "guides", "reduction"],
   "usesSansTitleConvention": true,
   "guides": {
     "order": ["eqsans-overview", "reduction-routes"],
@@ -112,7 +112,8 @@ Rules:
     }
   ],
   "agent": {
-    "suggestions": ["What Q range do I get at 4m 2.5a?"]
+    "suggestions": ["What Q range do I get at 4m 2.5a?"],
+    "retrievalTerms": ["eqsans", "drtsans"]
   },
   "maintainers": [{ "name": "…", "email": "…" }]
 }
@@ -124,12 +125,13 @@ Rules:
 | `facility` | `SNS` or `HFIR`. |
 | `name`, `shortName`, `fullName`, `beamline` | Shown in the header, the picker and the assistant's context line. |
 | `blurb` | One line under the name in the instrument picker. |
-| `capabilities` | Which screens the app offers. Vocabulary: `runs`, `monitor`, `detector`, `pv`, `guides`, `agent`, `reduction`. |
+| `capabilities` | Which screens the app offers. Vocabulary: `runs`, `monitor`, `detector`, `pv`, `guides`, `reduction`. Every instrument has the Ask assistant, so there is no capability for it; `monitor` is the live SNS monitor and applies to SNS instruments only. |
 | `usesSansTitleConvention` | Whether run titles follow the S-/T- convention the run classifier assumes. `false` shows raw titles without a class badge. |
 | `guides.order` | Guide ids in the order the Guides screen shows them. Every guide in `guides/` must appear. Shared guides the app ships (currently `oncat-access`) may appear too. May be empty when the pack has no guides. |
 | `guides.categories` | Which categories the pack's guides use. Vocabulary: `experiment`, `reduction`, `data-access`, `eqsanscli`, `sansdir`, `troubleshooting`. |
 | `links` | Web pages shown above the guides. `group` is `start`, `reduce`, `data` or `facility`. `login` marks pages that need an ORNL account. |
 | `agent.suggestions` | One to six opening questions on the Ask screen. Each at most 120 characters. |
+| `agent.retrievalTerms` | Optional. Lower-case words that mark a question as being about this instrument (its id, the name of its reduction tool). Retrieval gives a document a bonus when it and the question share one of these; the app already has the words common to every beamline (`sans`, `detector`, `reduction`, …). |
 | `maintainers` | Who to ask. Not shown in the app. |
 
 ## `agent/`

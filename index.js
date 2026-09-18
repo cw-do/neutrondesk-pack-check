@@ -234,9 +234,20 @@ async function run(opts) {
   check('A7: only allowed file types', badExt.length === 0, badExt.join(', '));
   check('A8: every file is UTF-8 text', binary.length === 0, binary.join(', '));
 
+  const rawCapabilities = readJson(path.join(packDir, 'pack.json')).capabilities ?? [];
+  const deprecated = rawCapabilities.filter((c) => vocab.DEPRECATED_CAPABILITIES.includes(c));
+  if (deprecated.length) {
+    warn(`A4: capability "${deprecated.join('", "')}" is deprecated and ignored; every instrument has the Ask assistant, and agent/system-prompt.md is what tunes it`);
+  }
+  if (m.facility !== 'SNS' && m.capabilities.includes('monitor')) {
+    warn('A4: "monitor" declared for a non-SNS instrument; the live monitor (monitor.sns.gov) serves SNS instruments only');
+  }
+
   // --- B. agent content -------------------------------------------------------
-  if (m.capabilities.includes('agent')) {
-    const p = pack.instructions ?? '';
+  if (pack.instructions === null) {
+    warn('B9: no agent/system-prompt.md; the assistant for this instrument will have the shared behaviour and the catalogue only');
+  } else {
+    const p = pack.instructions;
     check('B9: system prompt is at least 200 characters', p.length >= 200, `${p.length} characters`);
     const placeholders = [...p.matchAll(/\{\{\s*([A-Za-z_]+)\s*\}\}/g)].map((x) => x[1]).filter((x) => x !== 'INSTRUMENT_NAME');
     check('B9: no unknown placeholders in the system prompt', placeholders.length === 0, placeholders.join(', '));
@@ -399,7 +410,7 @@ async function run(opts) {
         ...pack.modules.map(core.moduleDoc),
         ...m.guides.order.map((id) => guideById.get(id)).filter(Boolean).map(core.guideDoc),
       ];
-      const corpus = core.buildCorpus(docs);
+      const corpus = core.buildCorpus(docs, m.agent.retrievalTerms ?? []);
       for (const c of cases.retrieval) {
         const got = core.retrieveFrom(corpus, c.q, 5);
         const ids = got.map((d) => d.id);

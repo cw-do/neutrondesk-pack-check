@@ -27,9 +27,12 @@ exports.guideDoc = guideDoc;
  * couple of common words — the difference between retrieving the temperature
  * module for "what temperature can the peltier reach" and retrieving whichever
  * document happens to say "can" most often.
+ *
+ * Only words that are about neutron scattering at any beamline belong here.
+ * An instrument's own names (its id, its reduction tool) come from its pack's
+ * `agent.retrievalTerms`, so no instrument is named in shared code.
  */
-const TECHNICAL_TERMS = [
-    'eqsans',
+const SHARED_TERMS = [
     'sans',
     'scan',
     'function',
@@ -44,7 +47,6 @@ const TECHNICAL_TERMS = [
     'reduction',
     'reduce',
     'stitch',
-    'drtsans',
 ];
 function wordCounts(text) {
     const counts = new Map();
@@ -53,7 +55,7 @@ function wordCounts(text) {
     }
     return counts;
 }
-function buildCorpus(docs) {
+function buildCorpus(docs, extraTerms = []) {
     const candidates = docs.map((d) => {
         const lower = d.lower ?? d.text.toLowerCase();
         return { id: d.id, title: d.title, text: d.text, origin: d.origin, lower, counts: wordCounts(lower) };
@@ -64,7 +66,8 @@ function buildCorpus(docs) {
             documentFrequency.set(word, (documentFrequency.get(word) ?? 0) + 1);
         }
     }
-    return { docs: candidates, documentFrequency };
+    const terms = [...new Set([...SHARED_TERMS, ...extraTerms.map((t) => t.toLowerCase())])];
+    return { docs: candidates, documentFrequency, terms };
 }
 /**
  * How much one matched word is worth.
@@ -101,7 +104,7 @@ function score(doc, words, queryLower, c) {
         const tf = 1 + Math.log(Math.min(occurrences, 12));
         s += 10 * idf * tf;
     }
-    for (const t of TECHNICAL_TERMS) {
+    for (const t of c.terms) {
         if (queryLower.includes(t) && doc.lower.includes(t))
             s += 12;
     }
