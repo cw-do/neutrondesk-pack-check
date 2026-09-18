@@ -126,7 +126,7 @@ Rules:
 | `blurb` | One line under the name in the instrument picker. |
 | `capabilities` | Which screens the app offers. Vocabulary: `runs`, `monitor`, `detector`, `pv`, `guides`, `agent`, `reduction`. |
 | `usesSansTitleConvention` | Whether run titles follow the S-/T- convention the run classifier assumes. `false` shows raw titles without a class badge. |
-| `guides.order` | Guide ids in the order the Guides screen shows them. Every guide in `guides/` must appear. Shared guides the app ships (currently `oncat-access`) may appear too. |
+| `guides.order` | Guide ids in the order the Guides screen shows them. Every guide in `guides/` must appear. Shared guides the app ships (currently `oncat-access`) may appear too. May be empty when the pack has no guides. |
 | `guides.categories` | Which categories the pack's guides use. Vocabulary: `experiment`, `reduction`, `data-access`, `eqsanscli`, `sansdir`, `troubleshooting`. |
 | `links` | Web pages shown above the guides. `group` is `start`, `reduce`, `data` or `facility`. `login` marks pages that need an ORNL account. |
 | `agent.suggestions` | One to six opening questions on the Ask screen. Each at most 120 characters. |
@@ -202,8 +202,10 @@ than no unit.
 ## `data/**`
 
 Any text files the pack's code needs, bundled verbatim and handed to the factory
-as `{ "<path relative to data/>": "<contents>" }`. The app does not parse them.
-EQSANS keeps its Q-range planner's `.sav` files here and parses them itself.
+as `{ "<path relative to data/>": "<contents>" }`. The app does not parse them,
+and the folder names under `data/` are the pack's own choice. EQSANS keeps its
+Q-range planner's `.sav` files under `data/qrange-configs/` and parses them
+itself.
 
 ## `src/` — pack code
 
@@ -216,7 +218,10 @@ const pack: PackFactory = (api: PackApi): PackDefinition => ({
 });
 export default pack;
 
-// Optional. pack-check calls it and compares the result with checks/golden/selfcheck.json.
+// Optional. pack-check calls it and compares the result with checks/golden/selfcheck.json
+// (and with checks/reference/selfcheck.json if present). Return raw numbers and
+// names, keep it NaN-free, and keep it well under the 256 KB file limit: names
+// of scan functions, not their bodies.
 export function selfCheck(api: PackApi): unknown { /* ... */ }
 ```
 
@@ -240,9 +245,11 @@ Constraints, enforced by `pack-check`:
 
 - Imports are relative paths inside `src/`, or `import type … from 'neutrondesk-pack-api'`.
   No other module, no value import from the API package, nothing from outside `src/`.
-- No `fetch`, `XMLHttpRequest`, `require`, dynamic `import`, `process`, `eval`,
-  `globalThis`, `setTimeout`, `setInterval`. The code is compiled without the
-  DOM library, so `fetch` and `console` do not even type-check.
+- No `fetch(`, `XMLHttpRequest`, `require(`, `import(`, `process.`, `eval(`,
+  `globalThis`, `setTimeout(`, `setInterval(` anywhere in `src/`. This is a
+  substring scan, so it applies to comments too ("the process." in a comment
+  fails). The code is compiled without the DOM library, so `fetch` and
+  `console` do not even type-check.
 - Tool names are `snake_case`, unique, and not one of the app's shared tools
   (`list_ipts_catalog`, `get_latest_run`, `list_experiments`).
 - Where a wrong answer costs beam time, the model supplies arguments and code
