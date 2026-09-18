@@ -1,0 +1,29 @@
+{
+  "name": "neutrondesk-pack-check",
+  "version": "0.1.0",
+  "description": "Checks an instrument pack for NeutronDesk: layout, manifest, guides, PV catalogue, code, cases and goldens.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cw-do/neutrondesk-pack-check.git"
+  },
+  "bin": {
+    "neutrondesk-pack-check": "index.js"
+  },
+  "main": "index.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "typescript": "~6.0.3"
+  },
+  "files": [
+    "*.js",
+    "pack-api",
+    "shared-guides.json",
+    "standalone.json",
+    "FORMAT.md",
+    "README.md",
+    "LICENSE"
+  ]
+}

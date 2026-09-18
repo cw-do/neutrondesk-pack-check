@@ -1,0 +1,11 @@
+[
+  {
+    "id": "oncat-access",
+    "title": "ONCat and data access",
+    "category": "data-access",
+    "summary": "Where run metadata comes from, what your login covers, and where the files live.",
+    "updated": "2026-09-14",
+    "source": "NeutronDesk",
+    "body": "# ONCat and data access\n\n## One credential\n\nORNL neutron users hold a single **XCAMS** or **UCAMS** identity. The same\nusername and password covers ONCat, the monitor pages and IPTS. NeutronDesk\nasks for it once and keeps it in the device secure store (iOS Keychain,\nAndroid Keystore). It is sent only to ORNL services.\n\nNeutronDesk acts with **your** permissions. It cannot show you an IPTS you\nwould not be able to open yourself, and it does not try to.\n\n## What ONCat holds\n\nONCat is the catalogue, not the data. For each run it records:\n\n- run number, title, start and end time, duration\n- total counts and accumulated proton charge\n- DAS logs: detector position, wavelength, chopper speed, sample environment\n- the path of the raw NeXus file on the archive\n\nSome of this is public. Run **metadata** requires an authenticated request,\nwhich is why the Runs list needs you to be signed in.\n\n## Where files live\n\nRaw data follows a fixed convention:\n\n    /SNS/EQSANS/IPTS-<number>/nexus/EQSANS_<run>.nxs.h5\n\nShared instrument files (sensitivity, dark current, beam flux) live under:\n\n    /SNS/EQSANS/shared/NeXusFiles/EQSANS/<cycle>/\n\nReduced output goes wherever the reduction was told to write it, which is\noutside the catalogue. NeutronDesk lists the raw file for a run and does not\nguess at output paths.\n\n## Units worth remembering\n\nONCat reports `detectorz` in **millimetres**. NeutronDesk converts to metres\nbefore showing it, so a 4 m configuration reads as 4.000 m and not 4000."
+  }
+]

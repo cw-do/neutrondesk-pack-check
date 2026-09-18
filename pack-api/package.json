@@ -1,0 +1,8 @@
+{
+  "name": "neutrondesk-pack-api",
+  "version": "0.1.0",
+  "description": "Type contract between NeutronDesk and an instrument pack. Types only; nothing here runs.",
+  "types": "index.d.ts",
+  "private": true,
+  "license": "UNLICENSED"
+}
