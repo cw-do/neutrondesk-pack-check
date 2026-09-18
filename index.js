@@ -253,6 +253,12 @@ async function run(opts) {
   }
   if (fs.existsSync(path.join(packDir, 'agent', 'scan-functions.txt'))) {
     check(`B11: scan-functions.txt parsed into ${pack.scanFunctions.length} function(s)`, pack.scanFunctions.length > 0);
+    if (pack.scanFunctionDuplicates.length) {
+      warn(
+        `B11: ${pack.scanFunctionDuplicates.length} function(s) defined more than once; the last definition is kept, as Python would`,
+        pack.scanFunctionDuplicates.join(', ')
+      );
+    }
   }
 
   // --- E. code ---------------------------------------------------------------
@@ -488,8 +494,26 @@ async function run(opts) {
         fail(`H28: could not read ${path.relative(packDir, referenceFile)}`, e.message);
       }
       if (reference) {
-        const d = diffJson(reference, JSON.parse(stable(pack.selfCheck)));
-        check(`H28: selfCheck() matches the reference ${path.relative(packDir, referenceFile)}`, d === null, d);
+        // Compared key by key at the top level, so a reference can cover what
+        // the original can produce and leave out what only the pack has (a
+        // label resolver the Python never had, say). Which keys were compared
+        // is printed, so a reference that covers nothing is visible.
+        const mine = JSON.parse(stable(pack.selfCheck));
+        const keys = reference && typeof reference === 'object' && !Array.isArray(reference) ? Object.keys(reference).sort() : null;
+        if (!keys) {
+          const d = diffJson(reference, mine);
+          check(`H28: selfCheck() matches the reference ${path.relative(packDir, referenceFile)}`, d === null, d);
+        } else {
+          const missing = keys.filter((k) => !(k in mine));
+          check('H28: every key in the reference exists in selfCheck()', missing.length === 0, missing.join(', '));
+          for (const k of keys) {
+            if (!(k in mine)) continue;
+            const d = diffJson(reference[k], mine[k], `$.${k}`);
+            check(`H28: selfCheck().${k} matches the reference`, d === null, d);
+          }
+          const uncovered = Object.keys(mine).filter((k) => !keys.includes(k));
+          if (uncovered.length) warn('H28: selfCheck() keys the reference does not cover', uncovered.join(', '));
+        }
       }
     }
   }

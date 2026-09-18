@@ -96,16 +96,30 @@ function loadModules(dir) {
     });
 }
 
+/**
+ * Split the scan-function source at each top-level `def`, so a lookup returns
+ * a whole function rather than a chunk that happens to straddle one.
+ *
+ * A name defined twice keeps its first position and its last body, which is
+ * what a Python dict built from the same file does and what the original
+ * agents did. The duplicates are reported so pack-check can warn: a function
+ * defined twice in a live scan file is a mistake worth telling the team about.
+ */
 function loadScanFunctions(file) {
-  if (!exists(file)) return [];
+  if (!exists(file)) return { functions: [], duplicates: [] };
   const source = read(file);
-  // Split at each top-level `def`, so a lookup returns a whole function rather
-  // than a chunk that happens to straddle one.
   const defs = [...source.matchAll(/^def\s+(\w+)\s*\(/gm)];
-  return defs.map((m, i) => ({
-    name: m[1],
-    body: source.slice(m.index, i + 1 < defs.length ? defs[i + 1].index : source.length).trimEnd(),
-  }));
+  const byName = new Map();
+  const duplicates = [];
+  defs.forEach((m, i) => {
+    const body = source.slice(m.index, i + 1 < defs.length ? defs[i + 1].index : source.length).trimEnd();
+    if (byName.has(m[1])) duplicates.push(m[1]);
+    byName.set(m[1], body);
+  });
+  return {
+    functions: [...byName.entries()].map(([name, body]) => ({ name, body })),
+    duplicates: [...new Set(duplicates)],
+  };
 }
 
 // --- data ------------------------------------------------------------------
@@ -265,6 +279,7 @@ function loadPack(dir, opts = {}) {
     throw new Error(`${label}/agent/system-prompt.md: must not contain ${INSTRUMENT_MARKER}; that marker belongs to the app template`);
   }
 
+  const scan = loadScanFunctions(path.join(dir, 'agent', 'scan-functions.txt'));
   return {
     folder: label,
     manifest,
@@ -272,7 +287,9 @@ function loadPack(dir, opts = {}) {
     guides,
     instructions,
     modules: loadModules(path.join(dir, 'agent', 'modules')),
-    scanFunctions: loadScanFunctions(path.join(dir, 'agent', 'scan-functions.txt')),
+    scanFunctions: scan.functions,
+    /** Names defined more than once in scan-functions.txt; not bundled, only reported. */
+    scanFunctionDuplicates: scan.duplicates,
     data: loadData(path.join(dir, 'data')),
     hasSrc: exists(path.join(dir, 'src', 'index.ts')),
   };

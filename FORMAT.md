@@ -153,8 +153,10 @@ used. Files sort by the first number in their name, so `module2` comes before
 
 **`scan-functions.txt`** is a copy of the instrument's scan-function source. It is
 split at every top-level `def name(` so a question about one function returns
-that function's real signature and body. Kept as `.txt` so nothing tries to run
-or lint it.
+that function's real signature and body. A name defined twice keeps its first
+position and its last body, as a Python dict built from the file would; the
+check warns about such duplicates because they are usually a mistake in the
+source file. Kept as `.txt` so nothing tries to run or lint it.
 
 ## `guides/*.md`
 
@@ -285,7 +287,9 @@ and committed; never regenerate them in CI.
 
 `reference/selfcheck.json`, if present, is a `selfCheck`-shaped JSON produced
 by something *other than the pack's code*, and the check fails unless the two
-agree to 1e-12. This is how a pack whose `src/` is a port (of a Python agent,
+agree to 1e-12. It is compared top-level key by key, so it may leave out a key
+that only the pack can produce (the check then warns which keys it did not
+cover). This is how a pack whose `src/` is a port (of a Python agent,
 say) proves the port is identical rather than claiming it. Keep the script that
 produced the file next to it (`reference/make-reference.py` is fine; `.py` is an
 allowed extension and is never run by the app or the check) and say in
