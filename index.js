@@ -6,12 +6,14 @@
  *   node tools/pack-check <pack dir> [--app <neutrondesk root>] [--write-golden] [--json]
  *   npx neutrondesk-pack-check <pack dir> [--write-golden] [--json]      (packaged)
  *
- * Runs without building the app and without a model. It needs four things
+ * Runs without building the app and without a model. It needs five things
  * from NeutronDesk: the shared guides, the pack-api types, the retrieval
  * scoring (src/agent/retrievalCore.ts, so a pack is scored by the arithmetic
- * the app uses), and the vocabularies. Inside an app checkout it reads them
- * from the source; as the packaged tool (`tools/pack-check/build-dist.js`) it
- * carries a snapshot of them and runs anywhere.
+ * the app uses), the scan-function tools the app builds over a pack's
+ * scan-functions.txt (src/agent/scanFunctionTools.ts), and the vocabularies.
+ * Inside an app checkout it reads them from the source; as the packaged tool
+ * (`tools/pack-check/build-dist.js`) it carries a snapshot of them and runs
+ * anywhere.
  *
  * Every check prints one line: ok, warn or FAIL. Any FAIL means exit 1 and,
  * for `packs:pull`, that the pack is not vendored. `--write-golden` records
@@ -33,8 +35,9 @@ const MAX_PACK_BYTES = 2 * 1024 * 1024;
 const MAX_FILE_BYTES = 256 * 1024;
 const MODULE_WARN_BYTES = 40 * 1024;
 // .py is allowed so a pack can keep the script that produced checks/reference/;
-// it is never run by the app or by this tool.
-const ALLOWED_EXTENSIONS = new Set(['.md', '.txt', '.json', '.sav', '.ts', '.csv', '.yaml', '.yml', '.py']);
+// it is never run by the app or by this tool. .diff is allowed for the
+// system-prompt split a converting agent leaves for a human to read.
+const ALLOWED_EXTENSIONS = new Set(['.md', '.txt', '.json', '.sav', '.ts', '.csv', '.yaml', '.yml', '.py', '.diff']);
 const ALLOWED_NAMES = new Set(['README.md', 'LICENSE', '.gitattributes', '.gitignore', 'package.json', 'package-lock.json', 'AGENTS.md', 'CLAUDE.md']);
 const SKIP_DIRS = new Set(['.git', 'node_modules', '.github']);
 /** Tool names the app owns: the catalogue tools, and the scan-function tools it builds over a pack's scan-functions.txt. */

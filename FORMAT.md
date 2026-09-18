@@ -13,8 +13,7 @@ Two kinds of pack exist and use the same layout:
 - **Content pack** — no `src/`. Prompt, modules, guides, PV catalogue, links.
   Most instruments need only this.
 - **Code pack** — adds `src/` with TypeScript that builds assistant tools from
-  the pack's own data. EQSANS is one: Q-range arithmetic, a scan-function
-  index, and script builders.
+  the pack's own data. EQSANS is one: Q-range arithmetic and script builders.
 
 ## Making a pack, step by step
 
@@ -62,6 +61,7 @@ Two kinds of pack exist and use the same layout:
   README.md                 recommended
   LICENSE                   recommended
   .gitattributes            recommended: * text=auto eol=lf
+  package.json              recommended: npm test -> neutrondesk-pack-check; dependencies must stay empty
   agent/
     system-prompt.md        what tunes the assistant; without it the instrument gets the shared behaviour only
     modules/*.md            optional; one topic per file; only .md is read
@@ -74,6 +74,7 @@ Two kinds of pack exist and use the same layout:
   checks/
     cases.json              optional; retrieval and tool cases
     golden/**               optional; expected outputs
+    reference/**            optional; the same outputs produced by the code's original, for a port
 ```
 
 Rules:
@@ -83,8 +84,11 @@ Rules:
 - Every file is UTF-8 with LF line endings. Ship a `.gitattributes` so Windows
   checkouts do not turn them into CRLF.
 - Whole pack at most 2 MB, no file over 256 KB, no binaries. Allowed
-  extensions: `.md .txt .json .sav .ts .csv .yaml .yml`, plus `README.md`,
-  `LICENSE` and `.gitattributes`.
+  extensions: `.md .txt .json .sav .ts .csv .yaml .yml .py .diff`, plus the
+  files `README.md`, `LICENSE`, `.gitattributes`, `.gitignore`, `package.json`,
+  `package-lock.json`, `AGENTS.md` and `CLAUDE.md`. `.py` is for the script
+  that produced `checks/reference/`; nothing runs it. `.diff` is for the
+  system-prompt split a converting agent leaves for a human to read.
 - If the pack has a `package.json`, its `dependencies` must be empty. Pack code
   uses only what the app already has.
 

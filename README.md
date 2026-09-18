@@ -1,8 +1,9 @@
 # neutrondesk-pack-check
 
-Checks an instrument pack for [NeutronDesk](https://github.com/cw-do/neutrondesk):
-will the app accept it, and does it do what its own cases say? Runs without
-the app and without a model.
+Checks an instrument pack for NeutronDesk, the ORNL neutron-experiment
+companion app (its own repository is private): will the app accept the pack,
+and does it do what its own cases say? Runs without the app and without a
+model.
 
 ```bash
 npm install --save-dev github:cw-do/neutrondesk-pack-check
@@ -21,7 +22,7 @@ Nothing in it is edited by hand; changes go to the app repository.
 
 ## What it checks
 
-Lettered as in `docs/upgradeplan/05-pack-check.md`.
+Each check prints a letter and number (A7, E19, H28) so a failure can be named.
 
 - **A structure** — `pack.json` parses and validates (id, facility, capabilities,
   guides, links, suggestions, unknown keys), size limits, allowed file types,
@@ -41,9 +42,11 @@ Lettered as in `docs/upgradeplan/05-pack-check.md`.
 - **G determinism** — loading twice gives the same result.
 - **H reference** — if `checks/reference/selfcheck.json` exists (or
   `--reference <file>` is given), `selfCheck()`'s output must equal it to
-  1e-12. This is how a pack whose code is a port of something else (Python,
-  say) proves the port is identical: the original writes the same JSON shape
-  over the same inputs, and the check compares.
+  1e-12, compared top-level key by key: the reference covers what the
+  original can produce, and keys only the pack has are listed as a warning.
+  This is how a pack whose code is a port of something else (Python, say)
+  proves the port is identical: the original writes the same JSON shape over
+  the same inputs, and the check compares.
 
 ## Goldens
 
