@@ -134,7 +134,7 @@ Rules:
 | `facility` | `SNS` or `HFIR`. |
 | `name`, `shortName`, `fullName`, `beamline` | Shown in the header, the picker and the assistant's context line. |
 | `blurb` | One line under the name in the instrument picker. |
-| `capabilities` | Which screens the app offers. Vocabulary: `runs`, `monitor`, `detector`, `pv`, `guides`, `reduction`. Every instrument has the Ask assistant, so there is no capability for it; `monitor` is the live SNS monitor and applies to SNS instruments only. |
+| `capabilities` | Which screens the app offers. Vocabulary: `runs`, `monitor`, `detector`, `pv`, `guides`, `reduction`. Every instrument has the Ask assistant, so there is no capability for it. `monitor` (live PVs) and `detector` (the per-run report with the auto-reduced plots) are both monitor.sns.gov, which serves every SNS instrument and no HFIR one: declare both for an SNS instrument, neither for HFIR. `reduction` needs pack code (EQSANS only, so far). |
 | `usesSansTitleConvention` | Whether run titles follow the S-/T- convention the run classifier assumes. `false` shows raw titles without a class badge. |
 | `guides.order` | Guide ids in the order the Guides screen shows them. Every guide in `guides/` must appear. Shared guides the app ships (currently `oncat-access`) may appear too. May be empty when the pack has no guides. |
 | `guides.categories` | Which categories the pack's guides use. Vocabulary: `experiment`, `reduction`, `data-access`, `eqsanscli`, `sansdir`, `troubleshooting`. |

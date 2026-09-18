@@ -253,8 +253,13 @@ async function run(opts) {
   if (deprecated.length) {
     warn(`A4: capability "${deprecated.join('", "')}" is deprecated and ignored; every instrument has the Ask assistant, and agent/system-prompt.md is what tunes it`);
   }
-  if (m.facility !== 'SNS' && m.capabilities.includes('monitor')) {
-    warn('A4: "monitor" declared for a non-SNS instrument; the live monitor (monitor.sns.gov) serves SNS instruments only');
+  for (const c of ['monitor', 'detector']) {
+    if (m.facility !== 'SNS' && m.capabilities.includes(c)) {
+      warn(`A4: "${c}" declared for a non-SNS instrument; monitor.sns.gov serves SNS instruments only`);
+    }
+    if (m.facility === 'SNS' && !m.capabilities.includes(c)) {
+      warn(`A4: SNS instrument without "${c}"; monitor.sns.gov serves every SNS instrument (live PVs as "monitor", the per-run report as "detector"). Omit only if it really has nothing there`);
+    }
   }
 
   // --- B. agent content -------------------------------------------------------
