@@ -276,6 +276,14 @@ Constraints, enforced by `pack-check`:
 `selfcheck.json` (whatever `selfCheck` returns). Goldens are reviewed by a person
 and committed; never regenerate them in CI.
 
+`reference/selfcheck.json`, if present, is a `selfCheck`-shaped JSON produced
+by something *other than the pack's code*, and the check fails unless the two
+agree to 1e-12. This is how a pack whose `src/` is a port (of a Python agent,
+say) proves the port is identical rather than claiming it. Keep the script that
+produced the file next to it (`reference/make-reference.py` is fine; `.py` is an
+allowed extension and is never run by the app or the check) and say in
+`reference/README.md` what it was run against.
+
 ## Checking a pack
 
 ```bash

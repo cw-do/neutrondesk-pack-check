@@ -39,6 +39,11 @@ Lettered as in `docs/upgradeplan/05-pack-check.md`.
   the pack's own corpus, `toolRuns` executed and asserted, and `checks/golden/*`
   compared with a numeric tolerance of 1e-12.
 - **G determinism** — loading twice gives the same result.
+- **H reference** — if `checks/reference/selfcheck.json` exists (or
+  `--reference <file>` is given), `selfCheck()`'s output must equal it to
+  1e-12. This is how a pack whose code is a port of something else (Python,
+  say) proves the port is identical: the original writes the same JSON shape
+  over the same inputs, and the check compares.
 
 ## Goldens
 

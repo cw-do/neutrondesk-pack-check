@@ -32,8 +32,10 @@ const vocab = require('./vocab');
 const MAX_PACK_BYTES = 2 * 1024 * 1024;
 const MAX_FILE_BYTES = 256 * 1024;
 const MODULE_WARN_BYTES = 40 * 1024;
-const ALLOWED_EXTENSIONS = new Set(['.md', '.txt', '.json', '.sav', '.ts', '.csv', '.yaml', '.yml']);
-const ALLOWED_NAMES = new Set(['README.md', 'LICENSE', '.gitattributes', '.gitignore', 'package.json', 'package-lock.json']);
+// .py is allowed so a pack can keep the script that produced checks/reference/;
+// it is never run by the app or by this tool.
+const ALLOWED_EXTENSIONS = new Set(['.md', '.txt', '.json', '.sav', '.ts', '.csv', '.yaml', '.yml', '.py']);
+const ALLOWED_NAMES = new Set(['README.md', 'LICENSE', '.gitattributes', '.gitignore', 'package.json', 'package-lock.json', 'AGENTS.md', 'CLAUDE.md']);
 const SKIP_DIRS = new Set(['.git', 'node_modules', '.github']);
 const SHARED_TOOL_NAMES = ['list_ipts_catalog', 'get_latest_run', 'list_experiments'];
 const FORBIDDEN_TOKENS = ['fetch(', 'XMLHttpRequest', 'require(', 'import(', 'process.', 'eval(', 'globalThis', 'setTimeout(', 'setInterval('];
@@ -44,17 +46,18 @@ const NUMBER_TOLERANCE = 1e-12;
 // ---------------------------------------------------------------------------
 
 function parseArgs(argv) {
-  const out = { packDir: null, app: null, writeGolden: false, json: false };
+  const out = { packDir: null, app: null, writeGolden: false, json: false, reference: null };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
     if (a === '--app') out.app = path.resolve(argv[++i]);
     else if (a === '--write-golden') out.writeGolden = true;
     else if (a === '--json') out.json = true;
+    else if (a === '--reference') out.reference = path.resolve(argv[++i]);
     else if (a.startsWith('--')) throw new Error(`unknown option ${a}`);
     else if (!out.packDir) out.packDir = path.resolve(a);
     else throw new Error(`unexpected argument ${a}`);
   }
-  if (!out.packDir) throw new Error('usage: pack-check <pack dir> [--app <root>] [--write-golden] [--json]');
+  if (!out.packDir) throw new Error('usage: pack-check <pack dir> [--app <root>] [--write-golden] [--reference <json>] [--json]');
   return out;
 }
 
@@ -462,6 +465,32 @@ async function run(opts) {
       }
       const d = diffJson(readJson(file), JSON.parse(stable(value)));
       check(`F24-26: checks/golden/${name} matches`, d === null, d);
+    }
+  }
+
+  // --- H. reference comparison --------------------------------------------------
+  //
+  // For a pack whose code is a port of something else (EQSANS's Q-range and
+  // script generation come from Python), "the port is identical" has to be a
+  // pass/fail, not a claim. The original produces a JSON with the same shape
+  // selfCheck() returns; this compares the two to 1e-12. checks/reference/
+  // README.md in a pack should say how that file was made.
+  const referenceFile = opts.reference ?? (fs.existsSync(path.join(checksDir, 'reference', 'selfcheck.json')) ? path.join(checksDir, 'reference', 'selfcheck.json') : null);
+  if (referenceFile) {
+    if (pack.selfCheck === undefined) {
+      fail('H28: a reference file is present but src/index.ts exports no selfCheck() to compare it with');
+    } else {
+      let reference;
+      try {
+        reference = readJson(referenceFile);
+      } catch (e) {
+        reference = null;
+        fail(`H28: could not read ${path.relative(packDir, referenceFile)}`, e.message);
+      }
+      if (reference) {
+        const d = diffJson(reference, JSON.parse(stable(pack.selfCheck)));
+        check(`H28: selfCheck() matches the reference ${path.relative(packDir, referenceFile)}`, d === null, d);
+      }
     }
   }
 
